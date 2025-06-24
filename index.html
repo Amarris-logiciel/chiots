@@ -1,347 +1,265 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Amarris Chiots – Logiciel de gestion</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #f4f6f8;
-            color: #333;
-            padding: 20px;
-        }
-
-        h1, h3 {
-            color: #2c3e50;
-        }
-
-        button {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            margin: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        button:hover {
-            background-color: #2980b9;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
-
-        tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-
-        tr:hover {
-            background-color: #e0f7fa;
-        }
-        #formDepense, #formChiot {
-            display: none;
-            margin-top: 10px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-            width: fit-content;
-        }
-        .message-erreur {
-            color: red;
-            margin-top: 5px;
-        }
-        .message-debug {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #eef;
-            border: 1px solid #99f;
-        }
-        tr.selected {
-            background-color: #d0f0d0;
-        }
-        #messageSucces {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-            padding: 10px;
-            margin-top: 10px;
-            display: none;
-            border-radius: 5px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <title>Amarris Chiots – Logiciel de gestion</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f8;
+      color: #333;
+      padding: 20px;
+    }
+    h1, h3 { color: #2c3e50; }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      margin: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    #formDepense, #formChiot {
+      display: none;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+      width: fit-content;
+    }
+    .message-erreur {
+      color: red;
+    }
+    #messageSucces {
+      background-color: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      padding: 10px;
+      margin-top: 10px;
+      display: none;
+    }
+  </style>
 </head>
 <body>
-    <h1>Amarris – Gestion des chiots</h1>
+  <h1>Amarris – Gestion des chiots</h1>
+  <button id="btnToggleChiot">Ajouter un chiot</button>
+  <button id="btnToggleDepense">Ajouter une dépense</button>
+  <button onclick="sauvegarderEtConfirmer()">Valider la sauvegarde</button>
+  <button onclick="supprimerChiotSelectionne()">Supprimer les chiots sélectionnés</button>
 
-    <button onclick="toggleFormChiot()">Ajouter un chiot</button>
-    <button onclick="toggleFormDepense()">Ajouter une dépense</button>
-    <button onclick="sauvegarderEtConfirmer()">Valider la sauvegarde</button>
-    <button onclick="supprimerChiotSelectionne()">Supprimer les chiots sélectionnés</button>
+  <div id="formChiot">
+    <h3>Nouveau chiot</h3>
+    <label>Nom : <input type="text" id="nomChiot"></label><br>
+    <label>Date de naissance : <input type="date" id="dateNaissance"></label><br>
+    <button id="btnAjouterChiot">Ajouter</button>
+  </div>
 
-    <div id="formChiot">
-        <h3>Nouveau chiot</h3>
-        <label>Nom : <input type="text" id="nomChiot"></label><br>
-        <label>Date de naissance : <input type="date" id="dateNaissance"></label><br>
-        <button id="btnAjouterChiot">Ajouter</button>
-    </div>
+  <div id="formDepense">
+    <h3>Nouvelle dépense</h3>
+    <label>Montant (€): <input type="number" id="montant"></label><br>
+    <label>Date: <input type="date" id="dateDepense"></label><br>
+    <button id="btnAjouterDepense">Valider</button>
+    <div id="erreurDepense" class="message-erreur"></div>
+  </div>
 
-    <div id="formDepense">
-        <h3>Nouvelle dépense</h3>
-        <label>Montant (€): <input type="number" id="montant"></label><br>
-        <label>Date: <input type="date" id="dateDepense"></label><br>
-        <button id="btnAjouterDepense">Valider</button>
-        <div id="erreurDepense" class="message-erreur"></div>
-    </div>
+  <h3>Liste des chiots</h3>
+  <table>
+    <thead>
+      <tr>
+        <th><input type="checkbox" id="selectAll"></th>
+        <th>Nom</th>
+        <th>Naissance</th>
+        <th>Statut</th>
+        <th>Valeur (€)</th>
+        <th>Changement statut</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="listeChiots"></tbody>
+  </table>
 
-    <h3>Liste des chiots</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th><input type="checkbox" id="selectAll"></th><th>Nom</th><th>Naissance</th><th>Statut</th><th>Valeur</th><th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="listeChiots"></tbody>
-    </table>
+  <div id="messageSucces"></div>
 
-    <div id="messageSucces"></div>
-    <div id="debug" class="message-debug"></div>
+  <script>
+    document.getElementById('btnToggleChiot').addEventListener('click', () => {
+      const form = document.getElementById('formChiot');
+      form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+    });
 
-    <script>
-        function toggleFormChiot() {
-            const form = document.getElementById('formChiot');
-            form.style.display = (form.style.display === 'none') ? 'block' : 'none';
-        }
+    document.getElementById('btnToggleDepense').addEventListener('click', () => {
+      const form = document.getElementById('formDepense');
+      form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+    });
 
-        function toggleFormDepense() {
-            const form = document.getElementById('formDepense');
-            form.style.display = (form.style.display === 'none') ? 'block' : 'none';
-        }
-        let chiots = [];
-        let depenses = [];
-        let chiotSelectionne = null;
-
-        function debug(message) {
-            const dbg = document.getElementById('debug');
-            dbg.innerText = message;
-            console.log("[DEBUG]", message);
-        }
-
-        function afficherSucces(message) {
-            const box = document.getElementById("messageSucces");
-            box.textContent = message;
-            box.style.display = "block";
-            setTimeout(() => box.style.display = "none", 3000);
-        }
-
-        function sauvegarder() {
-            localStorage.setItem('chiots', JSON.stringify(chiots));
-            localStorage.setItem('depenses', JSON.stringify(depenses));
-        }
-
-        function charger() {
-            const dataChiots = localStorage.getItem('chiots');
-            const dataDepenses = localStorage.getItem('depenses');
-            if (dataChiots) chiots = JSON.parse(dataChiots);
-            if (dataDepenses) depenses = JSON.parse(dataDepenses);
-        }
-
-        
-
-        
-
-        function nettoyerDate(dateStr) {
-            const d = new Date(dateStr);
-            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        }
-
-        function ajouterChiot() {
-            const nom = document.getElementById('nomChiot').value;
-            const naissance = document.getElementById('dateNaissance').value;
-            if (nom && naissance) {
-                chiots.push({ nom, naissance, statut: "STOCK", valeur: 0, id: Date.now().toString() });
-                document.getElementById('nomChiot').value = "";
-                document.getElementById('dateNaissance').value = "";
-                debug(`Chiot ajouté: ${nom}`);
-                afficherSucces(`Chiot "${nom}" ajouté avec succès !`);
-                recalculerValeurs();
-                sauvegarder();
-                document.getElementById('formChiot').style.display = 'none';
-            } else {
-                debug("Erreur: champ nom ou naissance vide pour le chiot.");
-            }
-        }
-
-        function ajouterDepense() {
-            const montant = parseFloat(document.getElementById('montant').value);
-            const date = document.getElementById('dateDepense').value;
-            const msg = document.getElementById('erreurDepense');
-            msg.textContent = "";
-
-            if (!isNaN(montant) && date) {
-                const dateNettoyee = nettoyerDate(date);
-                const chiotsStockIds = chiots
-                    .filter(c => c.statut === "STOCK" && nettoyerDate(c.naissance) <= dateNettoyee)
-                    .map(c => c.id);
-
-                if (chiotsStockIds.length === 0) {
-                    msg.textContent = "Aucun chiot éligible à cette date.";
-                    debug("Dépense refusée: aucun chiot éligible.");
-                    return;
-                }
-
-                depenses.push({ montant, date, chiotsIds: chiotsStockIds });
-                debug(`Dépense ajoutée: ${montant} € le ${date}`);
-                afficherSucces(`Dépense de ${montant.toFixed(2)} € ajoutée avec succès.`);
-                document.getElementById('montant').value = "";
-                document.getElementById('dateDepense').value = "";
-                document.getElementById('formDepense').style.display = 'none';
-                sauvegarder();
-                recalculerValeurs();
-            } else {
-                msg.textContent = "Veuillez remplir tous les champs correctement.";
-                debug("Erreur: Montant ou date invalide pour la dépense.");
-            }
-        }
-
-        function recalculerValeurs() {
-            chiots.forEach(c => c.valeur = 0);
-
-            depenses.forEach(dep => {
-                if (!Array.isArray(dep.chiotsIds)) return;
-                const chiotsEligibles = chiots.filter(c => dep.chiotsIds.includes(c.id));
-                const montantParChiot = chiotsEligibles.length ? dep.montant / chiotsEligibles.length : 0;
-                chiotsEligibles.forEach(c => c.valeur += montantParChiot);
-            });
-
-            rafraichirChiots();
-        }
-
-        function supprimerChiotSelectionne() {
-    const cases = document.querySelectorAll('.selectChiot:checked');
-    if (cases.length === 0) {
-        alert("Veuillez d'abord sélectionner au moins un chiot.");
-        return;
+    function sauvegarderEtConfirmer() {
+      document.getElementById('messageSucces').innerText = "Sauvegarde effectuée avec succès !";
+      document.getElementById('messageSucces').style.display = 'block';
+      setTimeout(() => {
+        document.getElementById('messageSucces').style.display = 'none';
+      }, 3000);
     }
-    const indices = Array.from(cases).map(c => parseInt(c.dataset.index)).sort((a, b) => b - a);
-    for (let idx of indices) supprimerChiot(idx);
-    rafraichirChiots();
+
+    const chiots = [];
+    const depenses = [];
+    const valeursFigees = {};
+
+    document.getElementById('btnAjouterChiot').addEventListener('click', () => {
+      const nom = document.getElementById('nomChiot').value.trim();
+      const naissance = document.getElementById('dateNaissance').value;
+      if (!nom || !naissance) return alert("Veuillez remplir les champs du chiot.");
+      chiots.push({ nom, naissance, statut: 'Stock', statutDate: null, valeur: 0 });
+      document.getElementById('nomChiot').value = '';
+      document.getElementById('dateNaissance').value = '';
+      afficherChiots();
+    });
+
+    document.getElementById('btnAjouterDepense').addEventListener('click', () => {
+      const montant = parseFloat(document.getElementById('montant').value);
+      const date = document.getElementById('dateDepense').value;
+      const erreurDepense = document.getElementById('erreurDepense');
+      erreurDepense.textContent = '';
+      if (!montant || !date) {
+        erreurDepense.textContent = "Veuillez remplir les champs de dépense.";
+        return;
+      }
+      const chiotsEligibles = chiots.filter(c => new Date(date) >= new Date(c.naissance));
+      if (chiots.length > 0 && chiotsEligibles.length === 0) {
+        erreurDepense.textContent = "Aucun chiot n'était né à cette date. Veuillez vérifier.";
+        return;
+      }
+      depenses.push({ montant, date });
+      recalculerValeurs();
+      afficherChiots();
+      document.getElementById('montant').value = '';
+      document.getElementById('dateDepense').value = '';
+      document.getElementById('formDepense').style.display = 'none';
+    });
+
+    function afficherChiots() {
+      const tbody = document.getElementById('listeChiots');
+      tbody.innerHTML = '';
+      chiots.forEach((chiot, index) => {
+        const valeur = (valeursFigees[index] !== undefined) ? valeursFigees[index] : chiot.valeur;
+        const tr = document.createElement('tr');
+        const statutDate = chiot.statutDate ? new Date(chiot.statutDate).toLocaleString('fr-FR') : '';
+        tr.innerHTML = `
+          <td><input type="checkbox" data-index="${index}"></td>
+          <td>${chiot.nom}</td>
+          <td>${chiot.naissance}</td>
+          <td>${chiot.statut}</td>
+          <td>${valeur.toFixed(2)}</td>
+          <td>${statutDate}</td>
+          <td>
+            <button onclick="changerStatut(${index}, 'Invest')">Invest</button>
+            <button onclick="changerStatut(${index}, 'Vendu')">Vendu</button>
+            <button onclick="changerStatut(${index}, 'Stock')">Annuler</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function changerStatut(index, statut) {
+      chiots[index].statut = statut;
+      chiots[index].statutDate = new Date().toISOString();
+      if (statut === 'Invest' || statut === 'Vendu') {
+        valeursFigees[index] = chiots[index].valeur;
+      } else if (statut === 'Stock') {
+        delete valeursFigees[index];
+        chiots[index].statutDate = null;
+      }
+      recalculerValeurs();
+      afficherChiots();
+    }
+
+    function recalculerValeurs() {
+      depenses.forEach(dep => {
+        const depDate = new Date(dep.date);
+        chiots.forEach((c, i) => {
+          const naissance = new Date(c.naissance);
+          const statutChange = c.statutDate ? new Date(c.statutDate) : null;
+          if (depDate >= naissance && (!statutChange || statutChange > depDate) && !(i in valeursFigees)) {
+            if (!c._appliquees) c._appliquees = [];
+            const dejaAppliquee = c._appliquees.includes(dep);
+            if (!dejaAppliquee) {
+              const eligibles = chiots.filter((c2, j) => {
+                const naissance2 = new Date(c2.naissance);
+                const statut2 = c2.statutDate ? new Date(c2.statutDate) : null;
+                return depDate >= naissance2 && (!statut2 || statut2 > depDate) && !(j in valeursFigees);
+              });
+              const part = eligibles.length ? dep.montant / eligibles.length : 0;
+              chiots[i].valeur += part;
+              c._appliquees.push(dep);
+            }
+          }
+        });
+      });
+    }
+
+    function supprimerChiotSelectionne() {
+      const checkboxes = document.querySelectorAll('#listeChiots input[type="checkbox"]:checked');
+      const indexASupprimer = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index));
+      indexASupprimer.sort((a, b) => b - a).forEach(i => {
+        chiots.splice(i, 1);
+        delete valeursFigees[i];
+      });
+      recalculerValeurs();
+      afficherChiots();
+    }
+
+    document.getElementById('selectAll').addEventListener('change', function () {
+      const checkboxes = document.querySelectorAll('#listeChiots input[type="checkbox"]');
+      checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+  function sauvegarderDonnees() {
+  localStorage.setItem('chiots', JSON.stringify(chiots));
+  localStorage.setItem('depenses', JSON.stringify(depenses));
+  localStorage.setItem('valeursFigees', JSON.stringify(valeursFigees));
 }
-            
 
-        function supprimerChiot(index) {
-            index = parseInt(index);
-            if (chiots[index]) {
-                const confirmation = confirm(`Supprimer le chiot \"${chiots[index].nom}\" ? Cette action est irréversible.`);
-                if (!confirmation) {
-                    debug("Suppression annulée.");
-                    return;
-                }
-                debug(`Chiot supprimé: ${chiots[index].nom}`);
-                const idSupprime = chiots[index].id;
-                chiots.splice(index, 1);
-                depenses = depenses.filter(dep => Array.isArray(dep.chiotsIds) && dep.chiotsIds.includes(idSupprime) ? dep.chiotsIds.length > 1 : true);
-                depenses.forEach(dep => {
-                    if (Array.isArray(dep.chiotsIds)) {
-                        dep.chiotsIds = dep.chiotsIds.filter(id => id !== idSupprime);
-                    }
-                });
-                sauvegarder();
-                recalculerValeurs();
-            }
-        }
-
-        function changerStatut(index, nouveauStatut) {
-            index = parseInt(index);
-            if (chiots[index] && chiots[index].statut === "STOCK") {
-                chiots[index].statut = nouveauStatut;
-                debug(`Chiot ${chiots[index].nom} mis en ${nouveauStatut}`);
-                sauvegarder();
-                recalculerValeurs();
-            } else {
-                debug(`Impossible de changer le statut pour l'index ${index}`);
-            }
-        }
-
-        function annulerOperation(index) {
-            index = parseInt(index);
-            if (chiots[index]) {
-                chiots[index].statut = "STOCK";
-                debug(`Statut annulé pour ${chiots[index].nom}`);
-                sauvegarder();
-                recalculerValeurs();
-            }
-        }
-
-        function rafraichirChiots() {
-            const tableau = document.getElementById('listeChiots');
-            tableau.innerHTML = "";
-            chiots.forEach((c, i) => {
-                const row = document.createElement('tr');
-                row.className = (i === chiotSelectionne) ? 'selected' : '';
-                
-                row.innerHTML = `
-                    <td><input type="checkbox" class="selectChiot" data-index="${i}" onclick="event.stopPropagation();"></td>
-                    <td>${c.nom}</td>
-                    <td>${c.naissance}</td>
-                    <td>${c.statut}</td>
-                    <td>${c.valeur.toFixed(2)} €</td>
-                    <td>
-                        <button class="invest" data-index="${i}">Invest</button>
-                        <button class="vendu" data-index="${i}">Vendu</button>
-                        <button class="annuler" data-index="${i}">Annuler</button>
-                    </td>
-                `;
-                tableau.appendChild(row);
-            });
-
-            document.querySelectorAll('.invest').forEach(btn => {
-                btn.addEventListener('click', () => changerStatut(btn.dataset.index, 'INVEST'));
-            });
-            document.querySelectorAll('.vendu').forEach(btn => {
-                btn.addEventListener('click', () => changerStatut(btn.dataset.index, 'VENDU'));
-            });
-            document.querySelectorAll('.annuler').forEach(btn => {
-                btn.addEventListener('click', () => annulerOperation(btn.dataset.index));
-            });
-
-            debug("Table rafraîchie avec " + chiots.length + " chiots.");
-        }
-
-        
-
-
-
-function sauvegarderEtConfirmer() {
-    sauvegarder();
-    afficherSucces("Données sauvegardées avec succès !");
+function chargerDonnees() {
+  const chiotsSauves = localStorage.getItem('chiots');
+  const depensesSauves = localStorage.getItem('depenses');
+  const valeursSauves = localStorage.getItem('valeursFigees');
+  if (chiotsSauves) Object.assign(chiots, JSON.parse(chiotsSauves));
+  if (depensesSauves) Object.assign(depenses, JSON.parse(depensesSauves));
+  if (valeursSauves) Object.assign(valeursFigees, JSON.parse(valeursSauves));
 }
 
 window.onload = function () {
-            document.getElementById('selectAll').addEventListener('change', function () {
-                const checked = this.checked;
-                document.querySelectorAll('.selectChiot').forEach(cb => cb.checked = checked);
-            });
-            charger();
-            document.getElementById('btnAjouterChiot').addEventListener('click', ajouterChiot);
-            document.getElementById('btnAjouterDepense').addEventListener('click', ajouterDepense);
-            rafraichirChiots();
-            debug("Page chargée.");
-        };
-    
+  chargerDonnees();
+  recalculerValeurs();
+  afficherChiots();
+};
 
+// Intégrer la sauvegarde dans chaque action importante
+['push', 'splice'].forEach(methode => {
+  const original = chiots[methode];
+  chiots[methode] = function () {
+    const res = original.apply(this, arguments);
+    sauvegarderDonnees();
+    return res;
+  };
+});
 
+const originalDepensePush = depenses.push;
+depenses.push = function () {
+  const res = originalDepensePush.apply(this, arguments);
+  sauvegarderDonnees();
+  return res;
+};
 
+</script>
 </body>
 </html>
