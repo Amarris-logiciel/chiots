@@ -134,6 +134,7 @@
         }
 
         function changerStatut(index, nouveauStatut) {
+            index = parseInt(index);
             if (chiots[index].statut === "STOCK") {
                 chiots[index].statut = nouveauStatut;
                 sauvegarder();
@@ -142,6 +143,7 @@
         }
 
         function annulerOperation(index) {
+            index = parseInt(index);
             chiots[index].statut = "STOCK";
             sauvegarder();
             recalculerValeurs();
