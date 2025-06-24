@@ -18,6 +18,37 @@
             margin-top: 5px;
         }
     </style>
+</head>
+<body>
+    <h1>Gestion de Chiots</h1>
+
+    <button onclick="toggleFormChiot()">Ajouter un chiot</button>
+    <div id="formChiot">
+        <h3>Nouveau chiot</h3>
+        <label>Nom : <input type="text" id="nomChiot"></label><br>
+        <label>Date de naissance : <input type="date" id="dateNaissance"></label><br>
+        <button id="btnAjouterChiot">Ajouter</button>
+    </div>
+
+    <button onclick="toggleFormDepense()">Ajouter une dépense</button>
+    <div id="formDepense">
+        <h3>Nouvelle dépense</h3>
+        <label>Montant (€): <input type="number" id="montant"></label><br>
+        <label>Date: <input type="date" id="dateDepense"></label><br>
+        <button id="btnAjouterDepense">Valider</button>
+        <div id="erreurDepense" class="message-erreur"></div>
+    </div>
+
+    <h3>Liste des chiots</h3>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Nom</th><th>Naissance</th><th>Statut</th><th>Valeur</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="listeChiots"></tbody>
+    </table>
+
     <script>
         let chiots = [];
         let depenses = [];
@@ -44,22 +75,22 @@
             form.style.display = (form.style.display === 'none') ? 'block' : 'none';
         }
 
+        function nettoyerDate(dateStr) {
+            const d = new Date(dateStr);
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+
         function ajouterChiot() {
             const nom = document.getElementById('nomChiot').value;
             const naissance = document.getElementById('dateNaissance').value;
             if (nom && naissance) {
-                chiots.push({ nom, naissance, statut: "STOCK", valeur: 0, id: crypto.randomUUID() });
+                chiots.push({ nom, naissance, statut: "STOCK", valeur: 0, id: Date.now().toString() });
                 document.getElementById('nomChiot').value = "";
                 document.getElementById('dateNaissance').value = "";
                 recalculerValeurs();
                 sauvegarder();
                 document.getElementById('formChiot').style.display = 'none';
             }
-        }
-
-        function nettoyerDate(dateStr) {
-            const d = new Date(dateStr);
-            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
         }
 
         function ajouterDepense() {
@@ -120,55 +151,38 @@
             const tableau = document.getElementById('listeChiots');
             tableau.innerHTML = "";
             chiots.forEach((c, i) => {
-                const row = `<tr>
+                const row = document.createElement('tr');
+                row.innerHTML = `
                     <td>${c.nom}</td>
                     <td>${c.naissance}</td>
                     <td>${c.statut}</td>
                     <td>${c.valeur.toFixed(2)} €</td>
                     <td>
-                        <button onclick="changerStatut(${i}, 'INVEST')">Invest</button>
-                        <button onclick="changerStatut(${i}, 'VENDU')">Vendu</button>
-                        <button onclick="annulerOperation(${i})">Annuler</button>
+                        <button class="invest" data-index="${i}">Invest</button>
+                        <button class="vendu" data-index="${i}">Vendu</button>
+                        <button class="annuler" data-index="${i}">Annuler</button>
                     </td>
-                </tr>`;
-                tableau.innerHTML += row;
+                `;
+                tableau.appendChild(row);
+            });
+
+            document.querySelectorAll('.invest').forEach(btn => {
+                btn.addEventListener('click', () => changerStatut(btn.dataset.index, 'INVEST'));
+            });
+            document.querySelectorAll('.vendu').forEach(btn => {
+                btn.addEventListener('click', () => changerStatut(btn.dataset.index, 'VENDU'));
+            });
+            document.querySelectorAll('.annuler').forEach(btn => {
+                btn.addEventListener('click', () => annulerOperation(btn.dataset.index));
             });
         }
 
         window.onload = function () {
             charger();
+            document.getElementById('btnAjouterChiot').addEventListener('click', ajouterChiot);
+            document.getElementById('btnAjouterDepense').addEventListener('click', ajouterDepense);
             rafraichirChiots();
         };
     </script>
-</head>
-<body>
-    <h1>Gestion de Chiots</h1>
-
-    <button onclick="toggleFormChiot()">Ajouter un chiot</button>
-    <div id="formChiot">
-        <h3>Nouveau chiot</h3>
-        <label>Nom : <input type="text" id="nomChiot"></label><br>
-        <label>Date de naissance : <input type="date" id="dateNaissance"></label><br>
-        <button onclick="ajouterChiot()">Ajouter</button>
-    </div>
-
-    <button onclick="toggleFormDepense()">Ajouter une dépense</button>
-    <div id="formDepense">
-        <h3>Nouvelle dépense</h3>
-        <label>Montant (€): <input type="number" id="montant"></label><br>
-        <label>Date: <input type="date" id="dateDepense"></label><br>
-        <button onclick="ajouterDepense()">Valider</button>
-        <div id="erreurDepense" class="message-erreur"></div>
-    </div>
-
-    <h3>Liste des chiots</h3>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>Nom</th><th>Naissance</th><th>Statut</th><th>Valeur</th><th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="listeChiots"></tbody>
-    </table>
 </body>
 </html>
