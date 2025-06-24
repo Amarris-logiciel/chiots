@@ -60,6 +60,12 @@
                 const chiotsStockIds = chiots
                     .filter(c => c.statut === "STOCK" && new Date(c.naissance) <= new Date(date))
                     .map(c => c.id);
+
+                if (chiotsStockIds.length === 0) {
+                    alert("Aucun chiot éligible pour cette dépense à cette date. Veuillez vérifier les dates.");
+                    return;
+                }
+
                 depenses.push({ montant, date, chiotsIds: chiotsStockIds });
                 recalculerValeurs();
                 document.getElementById('montant').value = "";
