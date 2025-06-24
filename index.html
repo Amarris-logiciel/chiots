@@ -145,6 +145,7 @@
             chiots.forEach(c => c.valeur = 0);
 
             depenses.forEach(dep => {
+                if (!Array.isArray(dep.chiotsIds)) return;
                 const chiotsEligibles = chiots.filter(c => dep.chiotsIds.includes(c.id));
                 const montantParChiot = chiotsEligibles.length ? dep.montant / chiotsEligibles.length : 0;
                 chiotsEligibles.forEach(c => c.valeur += montantParChiot);
@@ -179,7 +180,15 @@
             index = parseInt(index);
             if (chiots[index]) {
                 debug(`Chiot supprimé: ${chiots[index].nom}`);
+                const idSupprime = chiots[index].id;
                 chiots.splice(index, 1);
+                // Nettoyer les dépenses liées uniquement à ce chiot
+                depenses = depenses.filter(dep => Array.isArray(dep.chiotsIds) && dep.chiotsIds.includes(idSupprime) ? dep.chiotsIds.length > 1 : true);
+                depenses.forEach(dep => {
+                    if (Array.isArray(dep.chiotsIds)) {
+                        dep.chiotsIds = dep.chiotsIds.filter(id => id !== idSupprime);
+                    }
+                });
                 sauvegarder();
                 recalculerValeurs();
             }
