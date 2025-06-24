@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Gestion Chiots - WebApp</title>
+    <title>Gestion Chiots - WebApp (Debug)</title>
     <style>
         #formDepense, #formChiot {
             display: none;
@@ -17,10 +17,16 @@
             color: red;
             margin-top: 5px;
         }
+        .message-debug {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #eef;
+            border: 1px solid #99f;
+        }
     </style>
 </head>
 <body>
-    <h1>Gestion de Chiots</h1>
+    <h1>Gestion de Chiots - Mode Debug</h1>
 
     <button onclick="toggleFormChiot()">Ajouter un chiot</button>
     <div id="formChiot">
@@ -49,9 +55,17 @@
         <tbody id="listeChiots"></tbody>
     </table>
 
+    <div id="debug" class="message-debug"></div>
+
     <script>
         let chiots = [];
         let depenses = [];
+
+        function debug(message) {
+            const dbg = document.getElementById('debug');
+            dbg.innerText = message;
+            console.log("[DEBUG]", message);
+        }
 
         function sauvegarder() {
             localStorage.setItem('chiots', JSON.stringify(chiots));
@@ -87,9 +101,12 @@
                 chiots.push({ nom, naissance, statut: "STOCK", valeur: 0, id: Date.now().toString() });
                 document.getElementById('nomChiot').value = "";
                 document.getElementById('dateNaissance').value = "";
+                debug(`Chiot ajouté: ${nom}`);
                 recalculerValeurs();
                 sauvegarder();
                 document.getElementById('formChiot').style.display = 'none';
+            } else {
+                debug("Erreur: champ nom ou naissance vide pour le chiot.");
             }
         }
 
@@ -107,10 +124,12 @@
 
                 if (chiotsStockIds.length === 0) {
                     msg.textContent = "Aucun chiot éligible à cette date.";
+                    debug("Dépense refusée: aucun chiot éligible.");
                     return;
                 }
 
                 depenses.push({ montant, date, chiotsIds: chiotsStockIds });
+                debug(`Dépense ajoutée: ${montant} € le ${date}`);
                 recalculerValeurs();
                 document.getElementById('montant').value = "";
                 document.getElementById('dateDepense').value = "";
@@ -118,6 +137,7 @@
                 sauvegarder();
             } else {
                 msg.textContent = "Veuillez remplir tous les champs correctement.";
+                debug("Erreur: Montant ou date invalide pour la dépense.");
             }
         }
 
@@ -135,18 +155,34 @@
 
         function changerStatut(index, nouveauStatut) {
             index = parseInt(index);
-            if (chiots[index].statut === "STOCK") {
+            if (chiots[index] && chiots[index].statut === "STOCK") {
                 chiots[index].statut = nouveauStatut;
+                debug(`Chiot ${chiots[index].nom} mis en ${nouveauStatut}`);
                 sauvegarder();
                 recalculerValeurs();
+            } else {
+                debug(`Impossible de changer le statut pour l'index ${index}`);
             }
         }
 
         function annulerOperation(index) {
             index = parseInt(index);
-            chiots[index].statut = "STOCK";
-            sauvegarder();
-            recalculerValeurs();
+            if (chiots[index]) {
+                chiots[index].statut = "STOCK";
+                debug(`Statut annulé pour ${chiots[index].nom}`);
+                sauvegarder();
+                recalculerValeurs();
+            }
+        }
+
+        function supprimerChiot(index) {
+            index = parseInt(index);
+            if (chiots[index]) {
+                debug(`Chiot supprimé: ${chiots[index].nom}`);
+                chiots.splice(index, 1);
+                sauvegarder();
+                recalculerValeurs();
+            }
         }
 
         function rafraichirChiots() {
@@ -163,6 +199,7 @@
                         <button class="invest" data-index="${i}">Invest</button>
                         <button class="vendu" data-index="${i}">Vendu</button>
                         <button class="annuler" data-index="${i}">Annuler</button>
+                        <button class="supprimer" data-index="${i}">Supprimer</button>
                     </td>
                 `;
                 tableau.appendChild(row);
@@ -177,6 +214,11 @@
             document.querySelectorAll('.annuler').forEach(btn => {
                 btn.addEventListener('click', () => annulerOperation(btn.dataset.index));
             });
+            document.querySelectorAll('.supprimer').forEach(btn => {
+                btn.addEventListener('click', () => supprimerChiot(btn.dataset.index));
+            });
+
+            debug("Table rafraîchie avec " + chiots.length + " chiots.");
         }
 
         window.onload = function () {
@@ -184,6 +226,7 @@
             document.getElementById('btnAjouterChiot').addEventListener('click', ajouterChiot);
             document.getElementById('btnAjouterDepense').addEventListener('click', ajouterDepense);
             rafraichirChiots();
+            debug("Page chargée.");
         };
     </script>
 </body>
