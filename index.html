@@ -13,6 +13,10 @@
             background-color: #f9f9f9;
             width: fit-content;
         }
+        .message-erreur {
+            color: red;
+            margin-top: 5px;
+        }
     </style>
     <script>
         let chiots = [];
@@ -53,16 +57,25 @@
             }
         }
 
+        function nettoyerDate(dateStr) {
+            const d = new Date(dateStr);
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+
         function ajouterDepense() {
             const montant = parseFloat(document.getElementById('montant').value);
             const date = document.getElementById('dateDepense').value;
+            const msg = document.getElementById('erreurDepense');
+            msg.textContent = "";
+
             if (!isNaN(montant) && date) {
+                const dateNettoyee = nettoyerDate(date);
                 const chiotsStockIds = chiots
-                    .filter(c => c.statut === "STOCK" && new Date(c.naissance) <= new Date(date))
+                    .filter(c => c.statut === "STOCK" && nettoyerDate(c.naissance) <= dateNettoyee)
                     .map(c => c.id);
 
                 if (chiotsStockIds.length === 0) {
-                    alert("Aucun chiot éligible pour cette dépense à cette date. Veuillez vérifier les dates.");
+                    msg.textContent = "Aucun chiot éligible à cette date.";
                     return;
                 }
 
@@ -72,6 +85,8 @@
                 document.getElementById('dateDepense').value = "";
                 document.getElementById('formDepense').style.display = 'none';
                 sauvegarder();
+            } else {
+                msg.textContent = "Veuillez remplir tous les champs correctement.";
             }
         }
 
@@ -143,6 +158,7 @@
         <label>Montant (€): <input type="number" id="montant"></label><br>
         <label>Date: <input type="date" id="dateDepense"></label><br>
         <button onclick="ajouterDepense()">Valider</button>
+        <div id="erreurDepense" class="message-erreur"></div>
     </div>
 
     <h3>Liste des chiots</h3>
