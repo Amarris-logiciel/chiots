@@ -87,7 +87,8 @@
 
     <button onclick="toggleFormChiot()">Ajouter un chiot</button>
     <button onclick="toggleFormDepense()">Ajouter une dépense</button>
-    <button onclick="supprimerChiotSelectionne()">Supprimer le chiot sélectionné</button>
+    <button onclick="sauvegarderEtConfirmer()">Valider la sauvegarde</button>
+    $1
 
     <div id="formChiot">
         <h3>Nouveau chiot</h3>
@@ -326,6 +327,11 @@
             rafraichirChiots();
             debug("Page chargée.");
         };
-    </script>
+    function sauvegarderEtConfirmer() {
+    sauvegarder();
+    afficherSucces("Données sauvegardées avec succès !");
+}
+
+$1
 </body>
 </html>
