@@ -316,7 +316,9 @@
             debug("Table rafraîchie avec " + chiots.length + " chiots.");
         }
 
-        window.onload = function () {
+        
+
+window.onload = function () {
             document.getElementById('selectAll').addEventListener('change', function () {
                 const checked = this.checked;
                 document.querySelectorAll('.selectChiot').forEach(cb => cb.checked = checked);
