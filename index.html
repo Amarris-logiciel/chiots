@@ -23,12 +23,18 @@
             background-color: #eef;
             border: 1px solid #99f;
         }
+        tr.selected {
+            background-color: #d0f0d0;
+        }
     </style>
 </head>
 <body>
     <h1>Gestion de Chiots - Mode Debug</h1>
 
     <button onclick="toggleFormChiot()">Ajouter un chiot</button>
+    <button onclick="toggleFormDepense()">Ajouter une dépense</button>
+    <button onclick="supprimerChiotSelectionne()">Supprimer le chiot sélectionné</button>
+
     <div id="formChiot">
         <h3>Nouveau chiot</h3>
         <label>Nom : <input type="text" id="nomChiot"></label><br>
@@ -36,7 +42,6 @@
         <button id="btnAjouterChiot">Ajouter</button>
     </div>
 
-    <button onclick="toggleFormDepense()">Ajouter une dépense</button>
     <div id="formDepense">
         <h3>Nouvelle dépense</h3>
         <label>Montant (€): <input type="number" id="montant"></label><br>
@@ -60,6 +65,7 @@
     <script>
         let chiots = [];
         let depenses = [];
+        let chiotSelectionne = null;
 
         function debug(message) {
             const dbg = document.getElementById('debug');
@@ -110,48 +116,72 @@
             }
         }
 
-        function ajouterDepense() {
-            const montant = parseFloat(document.getElementById('montant').value);
-            const date = document.getElementById('dateDepense').value;
-            const msg = document.getElementById('erreurDepense');
-            msg.textContent = "";
+        function supprimerChiotSelectionne() {
+            if (chiotSelectionne === null) {
+                alert("Veuillez d'abord sélectionner un chiot.");
+                return;
+            }
+            supprimerChiot(chiotSelectionne);
+            chiotSelectionne = null;
+        }
 
-            if (!isNaN(montant) && date) {
-                const dateNettoyee = nettoyerDate(date);
-                const chiotsStockIds = chiots
-                    .filter(c => c.statut === "STOCK" && nettoyerDate(c.naissance) <= dateNettoyee)
-                    .map(c => c.id);
-
-                if (chiotsStockIds.length === 0) {
-                    msg.textContent = "Aucun chiot éligible à cette date.";
-                    debug("Dépense refusée: aucun chiot éligible.");
+        function supprimerChiot(index) {
+            index = parseInt(index);
+            if (chiots[index]) {
+                const confirmation = confirm(`Supprimer le chiot "${chiots[index].nom}" ? Cette action est irréversible.`);
+                if (!confirmation) {
+                    debug("Suppression annulée.");
                     return;
                 }
-
-                depenses.push({ montant, date, chiotsIds: chiotsStockIds });
-                debug(`Dépense ajoutée: ${montant} € le ${date}`);
-                recalculerValeurs();
-                document.getElementById('montant').value = "";
-                document.getElementById('dateDepense').value = "";
-                document.getElementById('formDepense').style.display = 'none';
+                debug(`Chiot supprimé: ${chiots[index].nom}`);
+                const idSupprime = chiots[index].id;
+                chiots.splice(index, 1);
+                depenses = depenses.filter(dep => Array.isArray(dep.chiotsIds) && dep.chiotsIds.includes(idSupprime) ? dep.chiotsIds.length > 1 : true);
+                depenses.forEach(dep => {
+                    if (Array.isArray(dep.chiotsIds)) {
+                        dep.chiotsIds = dep.chiotsIds.filter(id => id !== idSupprime);
+                    }
+                });
                 sauvegarder();
-            } else {
-                msg.textContent = "Veuillez remplir tous les champs correctement.";
-                debug("Erreur: Montant ou date invalide pour la dépense.");
+                recalculerValeurs();
             }
         }
 
-        function recalculerValeurs() {
-            chiots.forEach(c => c.valeur = 0);
-
-            depenses.forEach(dep => {
-                if (!Array.isArray(dep.chiotsIds)) return;
-                const chiotsEligibles = chiots.filter(c => dep.chiotsIds.includes(c.id));
-                const montantParChiot = chiotsEligibles.length ? dep.montant / chiotsEligibles.length : 0;
-                chiotsEligibles.forEach(c => c.valeur += montantParChiot);
+        function rafraichirChiots() {
+            const tableau = document.getElementById('listeChiots');
+            tableau.innerHTML = "";
+            chiots.forEach((c, i) => {
+                const row = document.createElement('tr');
+                row.className = (i === chiotSelectionne) ? 'selected' : '';
+                row.addEventListener('click', () => {
+                    chiotSelectionne = i;
+                    rafraichirChiots();
+                });
+                row.innerHTML = `
+                    <td>${c.nom}</td>
+                    <td>${c.naissance}</td>
+                    <td>${c.statut}</td>
+                    <td>${c.valeur.toFixed(2)} €</td>
+                    <td>
+                        <button class="invest" data-index="${i}">Invest</button>
+                        <button class="vendu" data-index="${i}">Vendu</button>
+                        <button class="annuler" data-index="${i}">Annuler</button>
+                    </td>
+                `;
+                tableau.appendChild(row);
             });
 
-            rafraichirChiots();
+            document.querySelectorAll('.invest').forEach(btn => {
+                btn.addEventListener('click', () => changerStatut(btn.dataset.index, 'INVEST'));
+            });
+            document.querySelectorAll('.vendu').forEach(btn => {
+                btn.addEventListener('click', () => changerStatut(btn.dataset.index, 'VENDU'));
+            });
+            document.querySelectorAll('.annuler').forEach(btn => {
+                btn.addEventListener('click', () => annulerOperation(btn.dataset.index));
+            });
+
+            debug("Table rafraîchie avec " + chiots.length + " chiots.");
         }
 
         function changerStatut(index, nouveauStatut) {
@@ -174,60 +204,6 @@
                 sauvegarder();
                 recalculerValeurs();
             }
-        }
-
-        function supprimerChiot(index) {
-            index = parseInt(index);
-            if (chiots[index]) {
-                debug(`Chiot supprimé: ${chiots[index].nom}`);
-                const idSupprime = chiots[index].id;
-                chiots.splice(index, 1);
-                // Nettoyer les dépenses liées uniquement à ce chiot
-                depenses = depenses.filter(dep => Array.isArray(dep.chiotsIds) && dep.chiotsIds.includes(idSupprime) ? dep.chiotsIds.length > 1 : true);
-                depenses.forEach(dep => {
-                    if (Array.isArray(dep.chiotsIds)) {
-                        dep.chiotsIds = dep.chiotsIds.filter(id => id !== idSupprime);
-                    }
-                });
-                sauvegarder();
-                recalculerValeurs();
-            }
-        }
-
-        function rafraichirChiots() {
-            const tableau = document.getElementById('listeChiots');
-            tableau.innerHTML = "";
-            chiots.forEach((c, i) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${c.nom}</td>
-                    <td>${c.naissance}</td>
-                    <td>${c.statut}</td>
-                    <td>${c.valeur.toFixed(2)} €</td>
-                    <td>
-                        <button class="invest" data-index="${i}">Invest</button>
-                        <button class="vendu" data-index="${i}">Vendu</button>
-                        <button class="annuler" data-index="${i}">Annuler</button>
-                        <button class="supprimer" data-index="${i}">Supprimer</button>
-                    </td>
-                `;
-                tableau.appendChild(row);
-            });
-
-            document.querySelectorAll('.invest').forEach(btn => {
-                btn.addEventListener('click', () => changerStatut(btn.dataset.index, 'INVEST'));
-            });
-            document.querySelectorAll('.vendu').forEach(btn => {
-                btn.addEventListener('click', () => changerStatut(btn.dataset.index, 'VENDU'));
-            });
-            document.querySelectorAll('.annuler').forEach(btn => {
-                btn.addEventListener('click', () => annulerOperation(btn.dataset.index));
-            });
-            document.querySelectorAll('.supprimer').forEach(btn => {
-                btn.addEventListener('click', () => supprimerChiot(btn.dataset.index));
-            });
-
-            debug("Table rafraîchie avec " + chiots.length + " chiots.");
         }
 
         window.onload = function () {
