@@ -57,7 +57,9 @@
             const montant = parseFloat(document.getElementById('montant').value);
             const date = document.getElementById('dateDepense').value;
             if (!isNaN(montant) && date) {
-                const chiotsStockIds = chiots.filter(c => c.statut === "STOCK").map(c => c.id);
+                const chiotsStockIds = chiots
+                    .filter(c => c.statut === "STOCK" && new Date(c.naissance) <= new Date(date))
+                    .map(c => c.id);
                 depenses.push({ montant, date, chiotsIds: chiotsStockIds });
                 recalculerValeurs();
                 document.getElementById('montant').value = "";
@@ -72,7 +74,7 @@
 
             depenses.forEach(dep => {
                 const chiotsEligibles = chiots.filter(c => dep.chiotsIds.includes(c.id));
-                const montantParChiot = dep.montant / dep.chiotsIds.length;
+                const montantParChiot = chiotsEligibles.length ? dep.montant / chiotsEligibles.length : 0;
                 chiotsEligibles.forEach(c => c.valeur += montantParChiot);
             });
 
