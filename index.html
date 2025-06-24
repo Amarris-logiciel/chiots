@@ -119,6 +119,15 @@
     <div id="debug" class="message-debug"></div>
 
     <script>
+        function toggleFormChiot() {
+            const form = document.getElementById('formChiot');
+            form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+        }
+
+        function toggleFormDepense() {
+            const form = document.getElementById('formDepense');
+            form.style.display = (form.style.display === 'none') ? 'block' : 'none';
+        }
         let chiots = [];
         let depenses = [];
         let chiotSelectionne = null;
@@ -150,15 +159,7 @@
 
         
 
-        function toggleFormChiot() {
-    const form = document.getElementById('formChiot');
-    form.style.display = (form.style.display === 'none') ? 'block' : 'none';
-}
-
-function toggleFormDepense() {
-    const form = document.getElementById('formDepense');
-    form.style.display = (form.style.display === 'none') ? 'block' : 'none';
-}
+        
 
         function nettoyerDate(dateStr) {
             const d = new Date(dateStr);
