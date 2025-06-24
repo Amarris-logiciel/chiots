@@ -63,7 +63,7 @@
     <table border="1">
         <thead>
             <tr>
-                <th>Nom</th><th>Naissance</th><th>Statut</th><th>Valeur</th><th>Actions</th>
+                <th><input type="checkbox" id="selectAll"></th><th>Nom</th><th>Naissance</th><th>Statut</th><th>Valeur</th><th>Actions</th>
             </tr>
         </thead>
         <tbody id="listeChiots"></tbody>
@@ -180,10 +180,15 @@
         }
 
         function supprimerChiotSelectionne() {
-            if (chiotSelectionne === null) {
-                alert("Veuillez d'abord sélectionner un chiot.");
-                return;
-            }
+    const cases = document.querySelectorAll('.selectChiot:checked');
+    if (cases.length === 0) {
+        alert("Veuillez d'abord sélectionner au moins un chiot.");
+        return;
+    }
+    const indices = Array.from(cases).map(c => parseInt(c.dataset.index)).sort((a, b) => b - a);
+    for (let idx of indices) supprimerChiot(idx);
+    rafraichirChiots();
+}
             supprimerChiot(chiotSelectionne);
             chiotSelectionne = null;
         }
@@ -238,11 +243,9 @@
             chiots.forEach((c, i) => {
                 const row = document.createElement('tr');
                 row.className = (i === chiotSelectionne) ? 'selected' : '';
-                row.addEventListener('click', () => {
-                    chiotSelectionne = i;
-                    rafraichirChiots();
-                });
+                
                 row.innerHTML = `
+                    <td><input type="checkbox" class="selectChiot" data-index="${i}" onclick="event.stopPropagation();"></td>
                     <td>${c.nom}</td>
                     <td>${c.naissance}</td>
                     <td>${c.statut}</td>
@@ -270,6 +273,10 @@
         }
 
         window.onload = function () {
+            document.getElementById('selectAll').addEventListener('change', function () {
+                const checked = this.checked;
+                document.querySelectorAll('.selectChiot').forEach(cb => cb.checked = checked);
+            });
             charger();
             document.getElementById('btnAjouterChiot').addEventListener('click', ajouterChiot);
             document.getElementById('btnAjouterDepense').addEventListener('click', ajouterDepense);
