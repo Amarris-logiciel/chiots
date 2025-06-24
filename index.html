@@ -44,7 +44,7 @@
             const nom = document.getElementById('nomChiot').value;
             const naissance = document.getElementById('dateNaissance').value;
             if (nom && naissance) {
-                chiots.push({ nom, naissance, statut: "STOCK", valeur: 0 });
+                chiots.push({ nom, naissance, statut: "STOCK", valeur: 0, id: crypto.randomUUID() });
                 document.getElementById('nomChiot').value = "";
                 document.getElementById('dateNaissance').value = "";
                 recalculerValeurs();
@@ -57,7 +57,8 @@
             const montant = parseFloat(document.getElementById('montant').value);
             const date = document.getElementById('dateDepense').value;
             if (!isNaN(montant) && date) {
-                depenses.push({ montant, date });
+                const chiotsStockIds = chiots.filter(c => c.statut === "STOCK").map(c => c.id);
+                depenses.push({ montant, date, chiotsIds: chiotsStockIds });
                 recalculerValeurs();
                 document.getElementById('montant').value = "";
                 document.getElementById('dateDepense').value = "";
@@ -67,30 +68,12 @@
         }
 
         function recalculerValeurs() {
-            let totalDepenses = 0;
-            let nbChiotsStock = 0;
-
-            chiots.forEach(c => {
-                if (c.statut === "STOCK") nbChiotsStock++;
-            });
-
-            if (nbChiotsStock === 0) {
-                // Ne rien faire si aucun chiot en stock
-                return;
-            }
-
-            // On calcule uniquement les dépenses non encore réparties
-            chiots.forEach(c => {
-                if (c.statut === "STOCK") c.valeur = 0;
-            });
+            chiots.forEach(c => c.valeur = 0);
 
             depenses.forEach(dep => {
-                const valeurUnitaire = dep.montant / nbChiotsStock;
-                chiots.forEach(c => {
-                    if (c.statut === "STOCK") {
-                        c.valeur += valeurUnitaire;
-                    }
-                });
+                const chiotsEligibles = chiots.filter(c => dep.chiotsIds.includes(c.id));
+                const montantParChiot = dep.montant / dep.chiotsIds.length;
+                chiotsEligibles.forEach(c => c.valeur += montantParChiot);
             });
 
             rafraichirChiots();
@@ -98,18 +81,16 @@
 
         function changerStatut(index, nouveauStatut) {
             if (chiots[index].statut === "STOCK") {
-                // On fige la valeur actuelle et change de statut
-                chiots[index].valeur = parseFloat(chiots[index].valeur.toFixed(2));
                 chiots[index].statut = nouveauStatut;
-                recalculerValeurs();
                 sauvegarder();
+                recalculerValeurs();
             }
         }
 
         function annulerOperation(index) {
             chiots[index].statut = "STOCK";
-            recalculerValeurs();
             sauvegarder();
+            recalculerValeurs();
         }
 
         function rafraichirChiots() {
@@ -164,9 +145,6 @@
             </tr>
         </thead>
         <tbody id="listeChiots"></tbody>
-    </table>
-</body>
-</html>
     </table>
 </body>
 </html>
