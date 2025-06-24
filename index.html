@@ -26,6 +26,15 @@
         tr.selected {
             background-color: #d0f0d0;
         }
+        #messageSucces {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 10px;
+            margin-top: 10px;
+            display: none;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
@@ -60,6 +69,7 @@
         <tbody id="listeChiots"></tbody>
     </table>
 
+    <div id="messageSucces"></div>
     <div id="debug" class="message-debug"></div>
 
     <script>
@@ -71,6 +81,13 @@
             const dbg = document.getElementById('debug');
             dbg.innerText = message;
             console.log("[DEBUG]", message);
+        }
+
+        function afficherSucces(message) {
+            const box = document.getElementById("messageSucces");
+            box.textContent = message;
+            box.style.display = "block";
+            setTimeout(() => box.style.display = "none", 3000);
         }
 
         function sauvegarder() {
@@ -108,13 +125,58 @@
                 document.getElementById('nomChiot').value = "";
                 document.getElementById('dateNaissance').value = "";
                 debug(`Chiot ajouté: ${nom}`);
-                alert(`Chiot \"${nom}\" ajouté avec succès !`);
+                afficherSucces(`Chiot "${nom}" ajouté avec succès !`);
                 recalculerValeurs();
                 sauvegarder();
                 document.getElementById('formChiot').style.display = 'none';
             } else {
                 debug("Erreur: champ nom ou naissance vide pour le chiot.");
             }
+        }
+
+        function ajouterDepense() {
+            const montant = parseFloat(document.getElementById('montant').value);
+            const date = document.getElementById('dateDepense').value;
+            const msg = document.getElementById('erreurDepense');
+            msg.textContent = "";
+
+            if (!isNaN(montant) && date) {
+                const dateNettoyee = nettoyerDate(date);
+                const chiotsStockIds = chiots
+                    .filter(c => c.statut === "STOCK" && nettoyerDate(c.naissance) <= dateNettoyee)
+                    .map(c => c.id);
+
+                if (chiotsStockIds.length === 0) {
+                    msg.textContent = "Aucun chiot éligible à cette date.";
+                    debug("Dépense refusée: aucun chiot éligible.");
+                    return;
+                }
+
+                depenses.push({ montant, date, chiotsIds: chiotsStockIds });
+                debug(`Dépense ajoutée: ${montant} € le ${date}`);
+                afficherSucces(`Dépense de ${montant.toFixed(2)} € ajoutée avec succès.`);
+                document.getElementById('montant').value = "";
+                document.getElementById('dateDepense').value = "";
+                document.getElementById('formDepense').style.display = 'none';
+                sauvegarder();
+                recalculerValeurs();
+            } else {
+                msg.textContent = "Veuillez remplir tous les champs correctement.";
+                debug("Erreur: Montant ou date invalide pour la dépense.");
+            }
+        }
+
+        function recalculerValeurs() {
+            chiots.forEach(c => c.valeur = 0);
+
+            depenses.forEach(dep => {
+                if (!Array.isArray(dep.chiotsIds)) return;
+                const chiotsEligibles = chiots.filter(c => dep.chiotsIds.includes(c.id));
+                const montantParChiot = chiotsEligibles.length ? dep.montant / chiotsEligibles.length : 0;
+                chiotsEligibles.forEach(c => c.valeur += montantParChiot);
+            });
+
+            rafraichirChiots();
         }
 
         function supprimerChiotSelectionne() {
@@ -129,7 +191,7 @@
         function supprimerChiot(index) {
             index = parseInt(index);
             if (chiots[index]) {
-                const confirmation = confirm(`Supprimer le chiot "${chiots[index].nom}" ? Cette action est irréversible.`);
+                const confirmation = confirm(`Supprimer le chiot \"${chiots[index].nom}\" ? Cette action est irréversible.`);
                 if (!confirmation) {
                     debug("Suppression annulée.");
                     return;
@@ -143,6 +205,28 @@
                         dep.chiotsIds = dep.chiotsIds.filter(id => id !== idSupprime);
                     }
                 });
+                sauvegarder();
+                recalculerValeurs();
+            }
+        }
+
+        function changerStatut(index, nouveauStatut) {
+            index = parseInt(index);
+            if (chiots[index] && chiots[index].statut === "STOCK") {
+                chiots[index].statut = nouveauStatut;
+                debug(`Chiot ${chiots[index].nom} mis en ${nouveauStatut}`);
+                sauvegarder();
+                recalculerValeurs();
+            } else {
+                debug(`Impossible de changer le statut pour l'index ${index}`);
+            }
+        }
+
+        function annulerOperation(index) {
+            index = parseInt(index);
+            if (chiots[index]) {
+                chiots[index].statut = "STOCK";
+                debug(`Statut annulé pour ${chiots[index].nom}`);
                 sauvegarder();
                 recalculerValeurs();
             }
@@ -185,74 +269,7 @@
             debug("Table rafraîchie avec " + chiots.length + " chiots.");
         }
 
-        function changerStatut(index, nouveauStatut) {
-            index = parseInt(index);
-            if (chiots[index] && chiots[index].statut === "STOCK") {
-                chiots[index].statut = nouveauStatut;
-                debug(`Chiot ${chiots[index].nom} mis en ${nouveauStatut}`);
-                sauvegarder();
-                recalculerValeurs();
-            } else {
-                debug(`Impossible de changer le statut pour l'index ${index}`);
-            }
-        }
-
-        function annulerOperation(index) {
-            index = parseInt(index);
-            if (chiots[index]) {
-                chiots[index].statut = "STOCK";
-                debug(`Statut annulé pour ${chiots[index].nom}`);
-                sauvegarder();
-                recalculerValeurs();
-            }
-        }
-
-        function ajouterDepense() {
-    const montant = parseFloat(document.getElementById('montant').value);
-    const date = document.getElementById('dateDepense').value;
-    const msg = document.getElementById('erreurDepense');
-    msg.textContent = "";
-
-    if (!isNaN(montant) && date) {
-        const dateNettoyee = nettoyerDate(date);
-        const chiotsStockIds = chiots
-            .filter(c => c.statut === "STOCK" && nettoyerDate(c.naissance) <= dateNettoyee)
-            .map(c => c.id);
-
-        if (chiotsStockIds.length === 0) {
-            msg.textContent = "Aucun chiot éligible à cette date.";
-            debug("Dépense refusée: aucun chiot éligible.");
-            return;
-        }
-
-        depenses.push({ montant, date, chiotsIds: chiotsStockIds });
-        debug(`Dépense ajoutée: ${montant} € le ${date}`);
-        alert(`Dépense de ${montant.toFixed(2)} € ajoutée avec succès.`);
-        document.getElementById('montant').value = "";
-        document.getElementById('dateDepense').value = "";
-        document.getElementById('formDepense').style.display = 'none';
-        sauvegarder();
-        recalculerValeurs();
-    } else {
-        msg.textContent = "Veuillez remplir tous les champs correctement.";
-        debug("Erreur: Montant ou date invalide pour la dépense.");
-    }
-}
-
-function recalculerValeurs() {
-    chiots.forEach(c => c.valeur = 0);
-
-    depenses.forEach(dep => {
-        if (!Array.isArray(dep.chiotsIds)) return;
-        const chiotsEligibles = chiots.filter(c => dep.chiotsIds.includes(c.id));
-        const montantParChiot = chiotsEligibles.length ? dep.montant / chiotsEligibles.length : 0;
-        chiotsEligibles.forEach(c => c.valeur += montantParChiot);
-    });
-
-    rafraichirChiots();
-}
-
-window.onload = function () {
+        window.onload = function () {
             charger();
             document.getElementById('btnAjouterChiot').addEventListener('click', ajouterChiot);
             document.getElementById('btnAjouterDepense').addEventListener('click', ajouterDepense);
