@@ -67,25 +67,43 @@
         }
 
         function recalculerValeurs() {
-            const chiotsStock = chiots.filter(c => c.statut === "STOCK");
-            const totalDepenses = depenses.reduce((acc, d) => acc + d.montant, 0);
-            const valeurParChiot = chiotsStock.length ? totalDepenses / chiotsStock.length : 0;
+            let totalDepenses = 0;
+            let nbChiotsStock = 0;
 
             chiots.forEach(c => {
-                if (c.statut === "STOCK") {
-                    c.valeur = valeurParChiot;
-                }
+                if (c.statut === "STOCK") nbChiotsStock++;
             });
+
+            if (nbChiotsStock === 0) {
+                // Ne rien faire si aucun chiot en stock
+                return;
+            }
+
+            // On calcule uniquement les dépenses non encore réparties
+            chiots.forEach(c => {
+                if (c.statut === "STOCK") c.valeur = 0;
+            });
+
+            depenses.forEach(dep => {
+                const valeurUnitaire = dep.montant / nbChiotsStock;
+                chiots.forEach(c => {
+                    if (c.statut === "STOCK") {
+                        c.valeur += valeurUnitaire;
+                    }
+                });
+            });
+
             rafraichirChiots();
         }
 
         function changerStatut(index, nouveauStatut) {
             if (chiots[index].statut === "STOCK") {
-                chiots[index].valeur = chiots[index].valeur;
+                // On fige la valeur actuelle et change de statut
+                chiots[index].valeur = parseFloat(chiots[index].valeur.toFixed(2));
+                chiots[index].statut = nouveauStatut;
+                recalculerValeurs();
+                sauvegarder();
             }
-            chiots[index].statut = nouveauStatut;
-            recalculerValeurs();
-            sauvegarder();
         }
 
         function annulerOperation(index) {
@@ -146,6 +164,9 @@
             </tr>
         </thead>
         <tbody id="listeChiots"></tbody>
+    </table>
+</body>
+</html>
     </table>
 </body>
 </html>
